@@ -12,9 +12,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/codegangsta/cli"
 	"github.com/golang/protobuf/proto"
-	pb "github.com/larskluge/babl/protobuf"
 	pbm "github.com/larskluge/babl/protobuf/messages"
 	"github.com/larskluge/babl/shared"
 	"github.com/nneves/kafka-tools/bkconsumer"
@@ -26,8 +24,6 @@ import (
 
 type server struct{}
 
-var command string
-
 func main() {
 	log.SetOutput(os.Stderr)
 	log.SetFormatter(&log.JSONFormatter{})
@@ -36,64 +32,23 @@ func main() {
 	app.Run(os.Args)
 }
 
-func configureCli() (app *cli.App) {
-	app = cli.NewApp()
-	app.Usage = "Server for a Babl Module"
-	app.Version = "0.3.0"
-	app.Action = defaultAction
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:   "module, m",
-			Usage:  "Module to serve",
-			EnvVar: "BABL_MODULE",
-		},
-		cli.StringFlag{
-			Name:   "cmd",
-			Usage:  "Command to be executed",
-			Value:  "cat",
-			EnvVar: "BABL_COMMAND",
-		},
-		cli.IntFlag{
-			Name:   "port",
-			Usage:  "Port for server to be started on",
-			EnvVar: "PORT",
-			Value:  4444,
-		},
+func run(listen string) {
+	lis, err := net.Listen("tcp", listen)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err, "listen": listen}).Fatal("Failed to listen at port")
 	}
-	return
-}
 
-func defaultAction(c *cli.Context) {
-	module := c.String("module")
-	if module == "" {
-		cli.ShowAppHelp(c)
-		os.Exit(1)
-	} else {
-		if !shared.CheckModuleName(module) {
-			log.WithFields(log.Fields{"module": module}).Fatal("Module name format incorrect")
-		}
-		command = c.String("cmd")
-		address := fmt.Sprintf(":%d", c.Int("port"))
+	certPEMBlock, _ := Asset("data/server.pem")
+	keyPEMBlock, _ := Asset("data/server.key")
+	cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
+	check(err)
+	creds := credentials.NewServerTLSFromCert(&cert)
+	opts := []grpc.ServerOption{grpc.Creds(creds)}
 
-		log.Warn("Start module")
-
-		lis, err := net.Listen("tcp", address)
-		if err != nil {
-			log.WithFields(log.Fields{"error": err, "address": address}).Fatal("Failed to listen at port")
-		}
-
-		certPEMBlock, _ := Asset("data/server.pem")
-		keyPEMBlock, _ := Asset("data/server.key")
-		cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
-		check(err)
-		creds := credentials.NewServerTLSFromCert(&cert)
-		opts := []grpc.ServerOption{grpc.Creds(creds)}
-
-		s := grpc.NewServer(opts...)
-		m := shared.NewModule(module, false)
-		pb.RegisterBinaryServer(m.GrpcServiceName(), s, &server{})
-		s.Serve(lis)
-	}
+	s := grpc.NewServer(opts...)
+	m := shared.NewModule("larskluge/image-resize", false)
+	pb.RegisterBinaryServer(m.GrpcServiceName(), s, &server{})
+	s.Serve(lis)
 }
 
 func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, error) {
