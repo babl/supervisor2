@@ -41,13 +41,17 @@ func run(listen, kafkaBrokers string) {
 	s.kafkaClient = *NewKafkaClient(kafkaBrokers)
 	defer s.kafkaClient.Close()
 
-	modules := knownModules(s.kafkaClient)
+	newModulesChan := make(chan string)
+	go discoverModules(s.kafkaClient, newModulesChan)
+	go func() {
+		for module := range newModulesChan {
+			log.Infof("New Module Discovered: %s", module)
+			m := shared.NewModule(module, false)
+			pb.RegisterBinaryServer(m.GrpcServiceName(), server, &s)
+		}
+	}()
 
-	fmt.Println(modules)
-	for _, module := range modules {
-		m := shared.NewModule(module, false)
-		pb.RegisterBinaryServer(m.GrpcServiceName(), server, &s)
-	}
+	log.Infof("Server started at %s", listen)
 	server.Serve(lis)
 }
 
