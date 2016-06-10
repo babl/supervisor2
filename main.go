@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -33,6 +34,8 @@ func main() {
 }
 
 func run(listen string) {
+	modules := knownModules()
+
 	lis, err := net.Listen("tcp", listen)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err, "listen": listen}).Fatal("Failed to listen at port")
@@ -46,12 +49,16 @@ func run(listen string) {
 	opts := []grpc.ServerOption{grpc.Creds(creds)}
 
 	s := grpc.NewServer(opts...)
-	m := shared.NewModule("larskluge/image-resize", false)
-	pb.RegisterBinaryServer(m.GrpcServiceName(), s, &server{})
+
+	fmt.Println(modules)
+	for _, module := range modules {
+		m := shared.NewModule(module, false)
+		RegisterBinaryServer(m.GrpcServiceName(), s, &server{})
+	}
 	s.Serve(lis)
 }
 
-func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, error) {
+func (s *server) IO(_ context.Context, method string, in *pbm.BinRequest) (*pbm.BinReply, error) {
 	start := time.Now()
 
 	msg, err := proto.Marshal(in)
@@ -60,13 +67,13 @@ func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, err
 	randNbr := uint32(random(1, 999999))
 	randStr := strconv.FormatUint(uint64(randNbr), 10)
 
-	modulePath := "larskluge.image-resize"
-	fmt.Printf("Request URL: %q\r\n", modulePath)
+	topic := strings.Replace(method[1:], "/", ".", 1)
+	fmt.Printf("Request URL: %q -> topic: %s\n", method, topic)
 
 	kafkaInboxProducer(randStr, []byte{})
 
-	// Sends message to the babl module topic: "larskluge.image-resize"
-	kafkaTopicProducer(randStr, modulePath, msg)
+	// Sends message to the babl module topic: "babl.larskluge.ImageResize.IO"
+	kafkaTopicProducer(randStr, topic, msg)
 
 	data := kafkaInboxConsumer(randStr)
 
@@ -85,7 +92,7 @@ func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, err
 	return res, nil
 }
 
-func (s *server) Ping(ctx context.Context, in *pbm.Empty) (*pbm.Pong, error) {
+func (s *server) Ping(_ context.Context, in *pbm.Empty) (*pbm.Pong, error) {
 	log.Info("ping")
 	res := pbm.Pong{Val: "fake pong"}
 	return &res, nil
