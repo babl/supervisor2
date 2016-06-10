@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"net"
 	"os"
 	"strconv"
@@ -13,8 +12,6 @@ import (
 	pb "github.com/larskluge/babl/protobuf"
 	pbm "github.com/larskluge/babl/protobuf/messages"
 	"github.com/larskluge/babl/shared"
-	"github.com/nneves/kafka-tools/bkconsumer"
-	"github.com/nneves/kafka-tools/bkproducer"
 	"golang.org/x/net/context"
 )
 
@@ -81,33 +78,4 @@ func (s *server) Ping(_ context.Context, in *pbm.Empty) (*pbm.Pong, error) {
 	log.Info("ping")
 	res := pbm.Pong{Val: "fake pong"}
 	return &res, nil
-}
-
-func random(min, max int) int {
-	rand.Seed(time.Now().Unix())
-	return rand.Intn(max-min) + min
-}
-
-func kafkaInboxProducer(id string, value []byte) {
-	topic := "inbox." + id
-	fmt.Printf("Inbox -> ID=%q, Topic=%q, ValueSize=%q\r\n", id, topic, len(value))
-	bkproducer.Producer(id, topic, value)
-}
-
-func kafkaTopicProducer(id, topic string, value []byte) {
-	fmt.Printf("Topic -> ID=%q , Topic=%q, ValueSize=%q\r\n", id, topic, len(value))
-	bkproducer.Producer(id, topic, value)
-}
-
-func kafkaInboxConsumer(id string) []byte {
-	topic := "inbox." + id
-	fmt.Printf("Inbox <- ID=%q Topic=%q\r\n", id, topic)
-	_, value := bkconsumer.Consumer(topic)
-	return value
-}
-
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
