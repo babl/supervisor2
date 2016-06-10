@@ -77,12 +77,10 @@ func (s *server) IO(_ context.Context, method string, in *pbm.BinRequest) (*pbm.
 
 	data := kafkaInboxConsumer(randStr)
 
-	// fmt.Fprintf(w, "Received Response: %q\r\n", datastr)
-
 	res := &pbm.BinReply{}
 
 	if err := proto.Unmarshal(data, res); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	elapsed := float64(time.Since(start).Seconds() * 1000)
