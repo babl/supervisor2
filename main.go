@@ -1,15 +1,11 @@
-//go:generate go-bindata data/...
-
 package main
 
 import (
-	"crypto/tls"
 	"fmt"
 	"math/rand"
 	"net"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -20,9 +16,6 @@ import (
 	"github.com/nneves/kafka-tools/bkconsumer"
 	"github.com/nneves/kafka-tools/bkproducer"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/transport"
 )
 
 type server struct{}
@@ -36,21 +29,14 @@ func main() {
 }
 
 func run(listen string) {
-	modules := knownModules()
-
 	lis, err := net.Listen("tcp", listen)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err, "listen": listen}).Fatal("Failed to listen at port")
 	}
 
-	certPEMBlock, _ := Asset("data/server.pem")
-	keyPEMBlock, _ := Asset("data/server.key")
-	cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
-	check(err)
-	creds := credentials.NewServerTLSFromCert(&cert)
-	opts := []grpc.ServerOption{grpc.Creds(creds)}
+	modules := knownModules()
 
-	s := grpc.NewServer(opts...)
+	s := NewServer()
 
 	fmt.Println(modules)
 	for _, module := range modules {
@@ -63,21 +49,18 @@ func run(listen string) {
 func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, error) {
 	start := time.Now()
 
-	stream, _ := transport.StreamFromContext(ctx)
-	method := stream.Method()
-
 	msg, err := proto.Marshal(in)
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	randNbr := uint32(random(1, 999999))
 	randStr := strconv.FormatUint(uint64(randNbr), 10)
 
-	topic := strings.Replace(method[1:], "/", ".", 1)
-	fmt.Printf("Request URL: %q -> topic: %s\n", method, topic)
-
 	kafkaInboxProducer(randStr, []byte{})
 
-	// Sends message to the babl module topic: "babl.larskluge.ImageResize.IO"
+	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
+	topic := TopicFromMethod(MethodFromContext(ctx))
 	kafkaTopicProducer(randStr, topic, msg)
 
 	data := kafkaInboxConsumer(randStr)
@@ -89,7 +72,6 @@ func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, err
 	}
 
 	elapsed := float64(time.Since(start).Seconds() * 1000)
-
 	fmt.Printf("took %.3fs\n", elapsed)
 
 	return res, nil
