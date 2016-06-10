@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -56,6 +55,30 @@ func run(listen, kafkaBrokers string) {
 }
 
 func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, error) {
+	out := &pbm.BinReply{}
+	data, err := request(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	if err := proto.Unmarshal(*data, out); err != nil {
+		return nil, err
+	}
+	return out, err
+}
+
+func (s *server) Ping(ctx context.Context, in *pbm.Empty) (*pbm.Pong, error) {
+	out := &pbm.Pong{}
+	data, err := request(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	if err := proto.Unmarshal(*data, out); err != nil {
+		return nil, err
+	}
+	return out, err
+}
+
+func request(ctx context.Context, in proto.Message) (*[]byte, error) {
 	start := time.Now()
 
 	msg, err := proto.Marshal(in)
@@ -74,20 +97,8 @@ func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, err
 
 	data := kafkaInboxConsumer(randStr)
 
-	res := &pbm.BinReply{}
-
-	if err := proto.Unmarshal(data, res); err != nil {
-		return nil, err
-	}
-
 	elapsed := float64(time.Since(start).Seconds() * 1000)
-	fmt.Printf("took %.3fs\n", elapsed)
+	log.Infof("took %.3fs\n", elapsed)
 
-	return res, nil
-}
-
-func (s *server) Ping(_ context.Context, in *pbm.Empty) (*pbm.Pong, error) {
-	log.Info("ping")
-	res := pbm.Pong{Val: "fake pong"}
-	return &res, nil
+	return &data, nil
 }
