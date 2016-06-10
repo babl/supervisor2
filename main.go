@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Shopify/sarama"
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/proto"
 	pb "github.com/larskluge/babl/protobuf"
@@ -15,7 +16,10 @@ import (
 	"golang.org/x/net/context"
 )
 
-type server struct{}
+type server struct {
+	kafkaClient  sarama.Client
+	knownModules map[string]bool
+}
 
 func main() {
 	log.SetOutput(os.Stderr)
@@ -25,22 +29,26 @@ func main() {
 	app.Run(os.Args)
 }
 
-func run(listen string) {
+func run(listen, kafkaBrokers string) {
 	lis, err := net.Listen("tcp", listen)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err, "listen": listen}).Fatal("Failed to listen at port")
 	}
 
-	modules := knownModules()
+	s := server{}
+	server := NewServer()
 
-	s := NewServer()
+	s.kafkaClient = *NewKafkaClient(kafkaBrokers)
+	defer s.kafkaClient.Close()
+
+	modules := knownModules(s.kafkaClient)
 
 	fmt.Println(modules)
 	for _, module := range modules {
 		m := shared.NewModule(module, false)
-		pb.RegisterBinaryServer(m.GrpcServiceName(), s, &server{})
+		pb.RegisterBinaryServer(m.GrpcServiceName(), server, &s)
 	}
-	s.Serve(lis)
+	server.Serve(lis)
 }
 
 func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, error) {

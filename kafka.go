@@ -4,9 +4,17 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Shopify/sarama"
 	"github.com/nneves/kafka-tools/bkconsumer"
 	"github.com/nneves/kafka-tools/bkproducer"
 )
+
+func NewKafkaClient(brokerStr string) *sarama.Client {
+	brokers := strings.Split(brokerStr, ",")
+	client, err := sarama.NewClient(brokers, nil)
+	check(err)
+	return &client
+}
 
 func TopicFromMethod(method string) string {
 	return strings.Replace(method[1:], "/", ".", 1)

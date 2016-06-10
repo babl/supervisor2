@@ -4,7 +4,7 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-func knownModules() (mods []string) {
+func knownModules(client sarama.Client) (mods []string) {
 	modules := map[string]interface{}{}
 	client, err := sarama.NewClient([]string{"localhost:9092"}, nil)
 	check(err)
