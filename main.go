@@ -14,6 +14,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/proto"
+	pb "github.com/larskluge/babl/protobuf"
 	pbm "github.com/larskluge/babl/protobuf/messages"
 	"github.com/larskluge/babl/shared"
 	"github.com/nneves/kafka-tools/bkconsumer"
@@ -21,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/transport"
 )
 
 type server struct{}
@@ -53,13 +55,16 @@ func run(listen string) {
 	fmt.Println(modules)
 	for _, module := range modules {
 		m := shared.NewModule(module, false)
-		RegisterBinaryServer(m.GrpcServiceName(), s, &server{})
+		pb.RegisterBinaryServer(m.GrpcServiceName(), s, &server{})
 	}
 	s.Serve(lis)
 }
 
-func (s *server) IO(_ context.Context, method string, in *pbm.BinRequest) (*pbm.BinReply, error) {
+func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, error) {
 	start := time.Now()
+
+	stream, _ := transport.StreamFromContext(ctx)
+	method := stream.Method()
 
 	msg, err := proto.Marshal(in)
 	check(err)
