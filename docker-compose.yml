@@ -10,6 +10,8 @@ kafka:
     - zookeeper:zk
   environment:
     KAFKA_ADVERTISED_HOST_NAME: 127.0.0.1
+    KAFKA_MESSAGE_MAX_BYTES: 100000000
+    KAFKA_REPLICA_FETCH_MAX_BYTES: 104857600
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
 manager:
