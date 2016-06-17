@@ -6,9 +6,10 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/larskluge/babl-server-kafka/kafka"
-	"github.com/nneves/kafka-tools/bkconsumer"
+	"github.com/larskluge/babl-server-kafka/kafka/oldconsumer"
 )
 
+// NewKafkaClient returns new Kafka Client connection
 func NewKafkaClient(brokerStr string) *sarama.Client {
 	brokers := strings.Split(brokerStr, ",")
 	client, err := sarama.NewClient(brokers, nil)
@@ -16,6 +17,7 @@ func NewKafkaClient(brokerStr string) *sarama.Client {
 	return &client
 }
 
+// TopicFromMethod replace topic char '/' with '.'
 func TopicFromMethod(method string) string {
 	return strings.Replace(method[1:], "/", ".", 1)
 }
@@ -34,6 +36,6 @@ func kafkaTopicProducer(id, topic string, value []byte) {
 func kafkaInboxConsumer(id string) []byte {
 	topic := "inbox." + id
 	fmt.Printf("Inbox <- ID=%q Topic=%q\r\n", id, topic)
-	_, value := bkconsumer.Consumer(topic)
+	_, value := oldconsumer.Consumer(topic)
 	return value
 }
