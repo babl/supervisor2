@@ -6,7 +6,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/larskluge/babl-server-kafka/kafka"
-	"github.com/larskluge/babl-server-kafka/kafka/oldconsumer"
+	"github.com/larskluge/babl-server-kafka/kafka/singleconsumer"
 )
 
 // NewKafkaClient returns new Kafka Client connection
@@ -25,17 +25,17 @@ func TopicFromMethod(method string) string {
 func kafkaInboxProducer(id string, value []byte) {
 	topic := "inbox." + id
 	fmt.Printf("Inbox -> ID=%q, Topic=%q, ValueSize=%q\r\n", id, topic, len(value))
-	bablkafka.Producer(id, topic, value)
+	kafka.Producer(id, topic, value)
 }
 
 func kafkaTopicProducer(id, topic string, value []byte) {
 	fmt.Printf("Topic -> ID=%q , Topic=%q, ValueSize=%q\r\n", id, topic, len(value))
-	bablkafka.Producer(id, topic, value)
+	kafka.Producer(id, topic, value)
 }
 
 func kafkaInboxConsumer(id string) []byte {
 	topic := "inbox." + id
 	fmt.Printf("Inbox <- ID=%q Topic=%q\r\n", id, topic)
-	_, value := oldconsumer.Consumer(topic)
+	_, value := singleconsumer.Consumer(topic)
 	return value
 }
