@@ -20,6 +20,8 @@ type server struct {
 	knownModules map[string]bool
 }
 
+var debug bool
+
 func main() {
 	log.SetOutput(os.Stderr)
 	log.SetFormatter(&log.JSONFormatter{})
@@ -28,11 +30,13 @@ func main() {
 	app.Run(os.Args)
 }
 
-func run(listen, kafkaBrokers string) {
+func run(listen, kafkaBrokers string, clidebug bool) {
 	lis, err := net.Listen("tcp", listen)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err, "listen": listen}).Fatal("Failed to listen at port")
 	}
+
+	debug = clidebug
 
 	s := server{}
 	server := NewServer()

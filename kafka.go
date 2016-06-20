@@ -24,18 +24,24 @@ func TopicFromMethod(method string) string {
 
 func kafkaInboxProducer(id string, value []byte) {
 	topic := "inbox." + id
-	fmt.Printf("Inbox -> ID=%q, Topic=%q, ValueSize=%q\r\n", id, topic, len(value))
-	kafka.Producer(id, topic, value)
+	if debug {
+		fmt.Printf("Inbox -> ID=%q, Topic=%q, ValueSize=%q\r\n", id, topic, len(value))
+	}
+	kafka.Producer(id, topic, value, kafka.ProducerOptions{Verbose: debug})
 }
 
 func kafkaTopicProducer(id, topic string, value []byte) {
-	fmt.Printf("Topic -> ID=%q , Topic=%q, ValueSize=%q\r\n", id, topic, len(value))
-	kafka.Producer(id, topic, value)
+	if debug {
+		fmt.Printf("Topic -> ID=%q , Topic=%q, ValueSize=%q\r\n", id, topic, len(value))
+	}
+	kafka.Producer(id, topic, value, kafka.ProducerOptions{Verbose: debug})
 }
 
 func kafkaInboxConsumer(id string) []byte {
 	topic := "inbox." + id
-	fmt.Printf("Inbox <- ID=%q Topic=%q\r\n", id, topic)
-	_, value := singleconsumer.Consumer(topic)
+	if debug {
+		fmt.Printf("Inbox <- ID=%q Topic=%q\r\n", id, topic)
+	}
+	_, value := singleconsumer.Consumer(topic, debug)
 	return value
 }
