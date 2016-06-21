@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/Shopify/sarama"
+	log "github.com/Sirupsen/logrus"
 	"github.com/larskluge/babl-server/kafka"
 	"github.com/larskluge/babl-server/kafka/singleconsumer"
 )
@@ -24,24 +24,18 @@ func TopicFromMethod(method string) string {
 
 func kafkaInboxProducer(id string, value []byte) {
 	topic := "out." + id
-	if debug {
-		fmt.Printf("Payload Out -> ID=%q, Topic=%q, ValueSize=%q\r\n", id, topic, len(value))
-	}
+	log.Debugf("Payload Out -> ID=%q, Topic=%q, ValueSize=%q", id, topic, len(value))
 	kafka.Producer(id, topic, value, kafka.ProducerOptions{Verbose: debug})
 }
 
 func kafkaTopicProducer(id, topic string, value []byte) {
-	if debug {
-		fmt.Printf("Topic -> ID=%q , Topic=%q, ValueSize=%q\r\n", id, topic, len(value))
-	}
+	log.Debugf("Topic -> ID=%q , Topic=%q, ValueSize=%q", id, topic, len(value))
 	kafka.Producer(id, topic, value, kafka.ProducerOptions{Verbose: debug})
 }
 
 func kafkaInboxConsumer(id string) []byte {
 	topic := "out." + id
-	if debug {
-		fmt.Printf("Payload Out <- ID=%q Topic=%q\r\n", id, topic)
-	}
+	log.Debugf("Payload Out <- ID=%q Topic=%q", id, topic)
 	_, value := singleconsumer.Consumer(topic, debug)
 	return value
 }
