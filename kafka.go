@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/Shopify/sarama"
-	"github.com/larskluge/babl-server-kafka/kafka"
-	"github.com/larskluge/babl-server-kafka/kafka/singleconsumer"
+	"github.com/larskluge/babl-server/kafka"
+	"github.com/larskluge/babl-server/kafka/singleconsumer"
 )
 
 // NewKafkaClient returns new Kafka Client connection
