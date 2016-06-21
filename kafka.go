@@ -22,12 +22,6 @@ func TopicFromMethod(method string) string {
 	return strings.Replace(method[1:], "/", ".", 1)
 }
 
-func kafkaInboxProducer(id string, value []byte) {
-	topic := "out." + id
-	log.Debugf("Payload Out -> ID=%q, Topic=%q, ValueSize=%q", id, topic, len(value))
-	kafka.Producer(id, topic, value, kafka.ProducerOptions{Verbose: debug})
-}
-
 func kafkaTopicProducer(id, topic string, value []byte) {
 	log.Debugf("Topic -> ID=%q , Topic=%q, ValueSize=%q", id, topic, len(value))
 	kafka.Producer(id, topic, value, kafka.ProducerOptions{Verbose: debug})
@@ -35,7 +29,7 @@ func kafkaTopicProducer(id, topic string, value []byte) {
 
 func kafkaInboxConsumer(id string) []byte {
 	topic := "out." + id
-	log.Debugf("Payload Out <- ID=%q Topic=%q", id, topic)
+	log.Debugf("Consumer: Payload Out <- ID=%q Topic=%q", id, topic)
 	_, value := singleconsumer.Consumer(topic, debug)
 	return value
 }

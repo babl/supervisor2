@@ -96,8 +96,6 @@ func request(ctx context.Context, in proto.Message) (*[]byte, error) {
 	randNbr := uint32(random(1, 999999))
 	randStr := strconv.FormatUint(uint64(randNbr), 10)
 
-	kafkaInboxProducer(randStr, []byte{})
-
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
 	topic := TopicFromMethod(MethodFromContext(ctx))
 	kafkaTopicProducer(randStr, topic, msg)
