@@ -30,13 +30,12 @@ func main() {
 	app.Run(os.Args)
 }
 
-func run(listen, kafkaBrokers string, clidebug bool) {
+func run(listen, kafkaBrokers string, dbg bool) {
+	debug = dbg
 	lis, err := net.Listen("tcp", listen)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err, "listen": listen}).Fatal("Failed to listen at port")
 	}
-
-	debug = clidebug
 
 	s := server{}
 	server := NewServer()
