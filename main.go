@@ -21,6 +21,7 @@ type server struct {
 }
 
 var debug bool
+var hostname string
 
 func main() {
 	log.SetOutput(os.Stderr)
@@ -35,6 +36,8 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	}
+
+	hostname = Hostname()
 
 	lis, err := net.Listen("tcp", listen)
 	if err != nil {
@@ -95,12 +98,13 @@ func request(ctx context.Context, in proto.Message) (*[]byte, error) {
 
 	randNbr := uint32(random(1, 999999))
 	randStr := strconv.FormatUint(uint64(randNbr), 10)
+	key := hostname + "." + randStr
 
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
 	topic := TopicFromMethod(MethodFromContext(ctx))
-	kafkaTopicProducer(randStr, topic, msg)
+	kafkaTopicProducer(key, topic, msg)
 
-	data := kafkaInboxConsumer(randStr)
+	data := kafkaInboxConsumer(key)
 
 	elapsed := float64(time.Since(start).Seconds() * 1000)
 	log.Infof("took %.3fs\n", elapsed)
