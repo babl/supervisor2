@@ -16,8 +16,9 @@ import (
 )
 
 type server struct {
-	kafkaClient  sarama.Client
-	knownModules map[string]bool
+	kafkaClient   sarama.Client
+	kafkaProducer sarama.SyncProducer
+	knownModules  map[string]bool
 }
 
 var debug bool
@@ -49,6 +50,8 @@ func run(listen, kafkaBrokers string, dbg bool) {
 
 	s.kafkaClient = *NewKafkaClient(kafkaBrokers)
 	defer s.kafkaClient.Close()
+	s.kafkaProducer = *NewKafkaProducer(&s.kafkaClient)
+	defer s.kafkaProducer.Close()
 
 	newModulesChan := make(chan string)
 	go discoverModules(s.kafkaClient, newModulesChan)
@@ -60,13 +63,13 @@ func run(listen, kafkaBrokers string, dbg bool) {
 		}
 	}()
 
-	log.Infof("Server started at %s", listen)
+	log.Infof("Server starte at %s", listen)
 	server.Serve(lis)
 }
 
 func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, error) {
 	out := &pbm.BinReply{}
-	data, err := request(ctx, in)
+	data, err := s.request(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +81,7 @@ func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, err
 
 func (s *server) Ping(ctx context.Context, in *pbm.Empty) (*pbm.Pong, error) {
 	out := &pbm.Pong{}
-	data, err := request(ctx, in)
+	data, err := s.request(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +91,7 @@ func (s *server) Ping(ctx context.Context, in *pbm.Empty) (*pbm.Pong, error) {
 	return out, err
 }
 
-func request(ctx context.Context, in proto.Message) (*[]byte, error) {
+func (s *server) request(ctx context.Context, in proto.Message) (*[]byte, error) {
 	start := time.Now()
 
 	msg, err := proto.Marshal(in)
@@ -102,9 +105,10 @@ func request(ctx context.Context, in proto.Message) (*[]byte, error) {
 
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
 	topic := TopicFromMethod(MethodFromContext(ctx))
-	kafkaTopicProducer(key, topic, msg)
+	sendMessage(&s.kafkaProducer, key, topic, msg)
 
-	data := kafkaInboxConsumer(key)
+	consumer := NewKafkaConsumer(s.kafkaClient)
+	data := consumeOutTopic(consumer, key)
 
 	elapsed := float64(time.Since(start).Seconds() * 1000)
 	log.Infof("took %.3fs\n", elapsed)
