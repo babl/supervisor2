@@ -6,7 +6,6 @@ import (
 	"github.com/Shopify/sarama"
 	log "github.com/Sirupsen/logrus"
 	"github.com/larskluge/babl-server/kafka"
-	"github.com/larskluge/babl-server/kafka/singleconsumer"
 )
 
 // NewKafkaClient returns new Kafka Client connection
@@ -30,6 +29,6 @@ func kafkaTopicProducer(id, topic string, value []byte) {
 func kafkaInboxConsumer(id string) []byte {
 	topic := "out." + id
 	log.Debugf("Consumer: Payload Out <- ID=%q Topic=%q", id, topic)
-	_, value := singleconsumer.Consumer(topic, debug)
+	_, value := kafka.Consumer(topic, kafka.ConsumerOptions{Verbose: debug})
 	return value
 }
