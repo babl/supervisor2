@@ -10,12 +10,14 @@ var responses = make(map[string]chan []byte)
 
 func listenToModuleResponses(client sarama.Client) {
 	topic := "supervisor." + hostname
-	for {
-		log.Info("Consuming from supervisor topic")
-		key, value := kafka.Consumer(topic, kafka.ConsumerOptions{Verbose: debug})
-		channel, ok := responses[key]
+	log.Debug("Consuming from supervisor topic")
+	ch := make(chan kafka.ConsumerData)
+	go kafka.Consume(client, topic, ch)
+	for msg := range ch {
+		log.WithFields(log.Fields{"key": msg.Key}).Debug("Response received from module exec")
+		channel, ok := responses[msg.Key]
 		if ok {
-			channel <- value
+			channel <- msg.Value
 		}
 	}
 }

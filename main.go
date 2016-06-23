@@ -108,7 +108,7 @@ func (s *server) request(ctx context.Context, in proto.Message) (*[]byte, error)
 	topic := TopicFromMethod(MethodFromContext(ctx))
 	producer := kafka.NewProducer(s.kafkaClient)
 	defer producer.Close()
-	log.Debugf("Topic -> Key=%q , Topic=%q, ValueSize=%q", key, topic, len(msg))
+	log.WithFields(log.Fields{"topic": topic, "key": key, "value size": len(msg)}).Debug("Send message to module")
 	kafka.SendMessage(producer, key, topic, msg)
 
 	responses[randStr] = make(chan []byte)
