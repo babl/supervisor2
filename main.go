@@ -4,11 +4,13 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Shopify/sarama"
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/proto"
+	"github.com/larskluge/babl-server/kafka"
 	pb "github.com/larskluge/babl/protobuf"
 	pbm "github.com/larskluge/babl/protobuf/messages"
 	"github.com/larskluge/babl/shared"
@@ -47,7 +49,8 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	s := server{}
 	server := NewServer()
 
-	s.kafkaClient = *NewKafkaClient(kafkaBrokers)
+	brokers := strings.Split(kafkaBrokers, ",")
+	s.kafkaClient = kafka.NewClient(brokers, debug)
 	defer s.kafkaClient.Close()
 
 	newModulesChan := make(chan string)
@@ -66,7 +69,7 @@ func run(listen, kafkaBrokers string, dbg bool) {
 
 func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, error) {
 	out := &pbm.BinReply{}
-	data, err := request(ctx, in)
+	data, err := s.request(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +81,7 @@ func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, err
 
 func (s *server) Ping(ctx context.Context, in *pbm.Empty) (*pbm.Pong, error) {
 	out := &pbm.Pong{}
-	data, err := request(ctx, in)
+	data, err := s.request(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +91,7 @@ func (s *server) Ping(ctx context.Context, in *pbm.Empty) (*pbm.Pong, error) {
 	return out, err
 }
 
-func request(ctx context.Context, in proto.Message) (*[]byte, error) {
+func (s *server) request(ctx context.Context, in proto.Message) (*[]byte, error) {
 	start := time.Now()
 
 	msg, err := proto.Marshal(in)
@@ -102,7 +105,10 @@ func request(ctx context.Context, in proto.Message) (*[]byte, error) {
 
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
 	topic := TopicFromMethod(MethodFromContext(ctx))
-	kafkaTopicProducer(key, topic, msg)
+	producer := kafka.NewProducer(s.kafkaClient)
+	defer producer.Close()
+	log.Debugf("Topic -> Key=%q , Topic=%q, ValueSize=%q", key, topic, len(msg))
+	kafka.SendMessage(producer, key, topic, msg)
 
 	data := kafkaInboxConsumer(key)
 
