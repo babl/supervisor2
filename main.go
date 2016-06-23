@@ -18,8 +18,9 @@ import (
 )
 
 type server struct {
-	kafkaClient  sarama.Client
-	knownModules map[string]bool
+	kafkaClient   sarama.Client
+	kafkaProducer sarama.SyncProducer
+	knownModules  map[string]bool
 }
 
 var debug bool
@@ -53,6 +54,8 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	clientID := "supervisor." + hostname
 	s.kafkaClient = kafka.NewClient(brokers, clientID, debug)
 	defer s.kafkaClient.Close()
+	s.kafkaProducer = kafka.NewProducer(s.kafkaClient)
+	defer s.kafkaProducer.Close()
 
 	newModulesChan := make(chan string)
 	go discoverModules(s.kafkaClient, newModulesChan)
@@ -107,10 +110,8 @@ func (s *server) request(ctx context.Context, in proto.Message) (*[]byte, error)
 
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
 	topic := TopicFromMethod(MethodFromContext(ctx))
-	producer := kafka.NewProducer(s.kafkaClient)
-	defer producer.Close()
 	log.WithFields(log.Fields{"topic": topic, "key": key, "value size": len(msg)}).Debug("Send message to module")
-	kafka.SendMessage(producer, key, topic, msg)
+	kafka.SendMessage(s.kafkaProducer, key, topic, msg)
 
 	responses[randStr] = make(chan []byte)
 	data := <-responses[randStr]
