@@ -50,7 +50,8 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	server := NewServer()
 
 	brokers := strings.Split(kafkaBrokers, ",")
-	s.kafkaClient = kafka.NewClient(brokers, debug)
+	clientID := "supervisor." + hostname
+	s.kafkaClient = kafka.NewClient(brokers, clientID, debug)
 	defer s.kafkaClient.Close()
 
 	newModulesChan := make(chan string)
