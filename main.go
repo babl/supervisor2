@@ -62,6 +62,7 @@ func run(listen, kafkaBrokers string, dbg bool) {
 			pb.RegisterBinaryServer(m.GrpcServiceName(), server, &s)
 		}
 	}()
+	go listenToModuleResponses(s.kafkaClient)
 
 	log.Infof("Server started at %s", listen)
 	server.Serve(lis)
@@ -110,10 +111,12 @@ func (s *server) request(ctx context.Context, in proto.Message) (*[]byte, error)
 	log.Debugf("Topic -> Key=%q , Topic=%q, ValueSize=%q", key, topic, len(msg))
 	kafka.SendMessage(producer, key, topic, msg)
 
-	data := kafkaInboxConsumer(key)
+	responses[randStr] = make(chan []byte)
+	data := <-responses[randStr]
+	delete(responses, randStr)
 
 	elapsed := float64(time.Since(start).Seconds() * 1000)
-	log.Infof("took %.3fs\n", elapsed)
+	log.Infof("took %.3fs", elapsed)
 
 	return &data, nil
 }
