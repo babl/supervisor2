@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net"
 	"os"
 	"strconv"
@@ -113,12 +114,16 @@ func (s *server) request(ctx context.Context, in proto.Message) (*[]byte, error)
 	log.WithFields(log.Fields{"topic": topic, "key": key, "value size": len(msg)}).Debug("Send message to module")
 	kafka.SendMessage(s.kafkaProducer, key, topic, msg)
 
-	responses[randStr] = make(chan []byte)
-	data := <-responses[randStr]
-	delete(responses, randStr)
+	responses[randStr] = make(chan []byte, 1)
 
-	elapsed := float64(time.Since(start).Seconds() * 1000)
-	log.Infof("took %.3fs", elapsed)
-
-	return &data, nil
+	select {
+	case data := <-responses[randStr]:
+		delete(responses, randStr)
+		elapsed := float64(time.Since(start).Seconds() * 1000)
+		log.WithFields(log.Fields{"duration_ms": elapsed}).Info("Module responded")
+		return &data, nil
+	case <-time.After(time.Second * 1):
+		log.Error("Module execution timed out")
+		return nil, errors.New("Module execution timed out")
+	}
 }

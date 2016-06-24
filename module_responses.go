@@ -18,6 +18,7 @@ func listenToModuleResponses(client sarama.Client) {
 		channel, ok := responses[msg.Key]
 		if ok {
 			channel <- msg.Value
+			close(channel)
 		}
 	}
 }
