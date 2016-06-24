@@ -54,7 +54,7 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	clientID := "supervisor." + hostname
 	s.kafkaClient = kafka.NewClient(brokers, clientID, debug)
 	defer s.kafkaClient.Close()
-	s.kafkaProducer = kafka.NewProducer(s.kafkaClient)
+	s.kafkaProducer = kafka.NewProducer(brokers, clientID+".producer")
 	defer s.kafkaProducer.Close()
 
 	newModulesChan := make(chan string)
