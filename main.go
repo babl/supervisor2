@@ -20,7 +20,7 @@ import (
 
 type server struct {
 	kafkaClient   *sarama.Client
-	kafkaProducer sarama.SyncProducer
+	kafkaProducer *sarama.SyncProducer
 	knownModules  map[string]bool
 }
 
@@ -56,7 +56,7 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	s.kafkaClient = kafka.NewClient(brokers, clientID, debug)
 	defer (*s.kafkaClient).Close()
 	s.kafkaProducer = kafka.NewProducer(brokers, clientID+".producer")
-	defer s.kafkaProducer.Close()
+	defer (*s.kafkaProducer).Close()
 
 	newModulesChan := make(chan string)
 	go discoverModules(s.kafkaClient, newModulesChan)
