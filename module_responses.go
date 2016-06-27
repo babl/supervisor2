@@ -8,7 +8,7 @@ import (
 
 var responses = make(map[string]chan []byte)
 
-func listenToModuleResponses(client sarama.Client) {
+func listenToModuleResponses(client *sarama.Client) {
 	topic := "supervisor." + hostname
 	log.Debug("Consuming from supervisor topic")
 	ch := make(chan kafka.ConsumerData)
