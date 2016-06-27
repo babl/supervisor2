@@ -112,7 +112,7 @@ func (s *server) request(ctx context.Context, in proto.Message) (*[]byte, error)
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
 	topic := TopicFromMethod(MethodFromContext(ctx))
 	log.WithFields(log.Fields{"topic": topic, "key": key, "value size": len(msg)}).Debug("Send message to module")
-	kafka.SendMessage(s.kafkaProducer, key, topic, msg)
+	kafka.SendMessage(s.kafkaProducer, key, topic, &msg)
 
 	responses[randStr] = make(chan []byte, 1)
 
