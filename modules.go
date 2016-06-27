@@ -4,8 +4,8 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-func discoverModules(client sarama.Client, ch chan string) {
-	c, err := sarama.NewConsumerFromClient(client)
+func discoverModules(client *sarama.Client, ch chan string) {
+	c, err := sarama.NewConsumerFromClient(*client)
 	check(err)
 	defer c.Close()
 
