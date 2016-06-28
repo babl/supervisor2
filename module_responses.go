@@ -6,8 +6,6 @@ import (
 	"github.com/larskluge/babl-server/kafka"
 )
 
-var responses = make(map[string]chan []byte)
-
 func listenToModuleResponses(client *sarama.Client) {
 	topic := "supervisor." + hostname
 	log.Debug("Consuming from supervisor topic")
@@ -15,7 +13,7 @@ func listenToModuleResponses(client *sarama.Client) {
 	go kafka.Consume(client, topic, ch)
 	for msg := range ch {
 		log.WithFields(log.Fields{"key": msg.Key}).Debug("Response received from module exec")
-		channel, ok := responses[msg.Key]
+		channel, ok := resp.channels[msg.Key]
 		if ok {
 			channel <- msg.Value
 			close(channel)

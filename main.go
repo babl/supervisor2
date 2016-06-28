@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -21,11 +22,16 @@ import (
 type server struct {
 	kafkaClient   *sarama.Client
 	kafkaProducer *sarama.SyncProducer
-	knownModules  map[string]bool
+}
+
+type responses struct {
+	channels map[string]chan []byte
+	mux      sync.Mutex
 }
 
 var debug bool
 var hostname string
+var resp responses
 
 func main() {
 	log.SetOutput(os.Stderr)
@@ -42,6 +48,7 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	}
 
 	hostname = Hostname()
+	resp = responses{channels: make(map[string]chan []byte)}
 
 	lis, err := net.Listen("tcp", listen)
 	if err != nil {
@@ -114,11 +121,13 @@ func (s *server) request(ctx context.Context, in proto.Message) (*[]byte, error)
 	log.WithFields(log.Fields{"topic": topic, "key": key, "value size": len(msg)}).Debug("Send message to module")
 	kafka.SendMessage(s.kafkaProducer, key, topic, &msg)
 
-	responses[randStr] = make(chan []byte, 1)
+	resp.mux.Lock()
+	resp.channels[randStr] = make(chan []byte, 1)
+	resp.mux.Unlock()
 
 	select {
-	case data := <-responses[randStr]:
-		delete(responses, randStr)
+	case data := <-resp.channels[randStr]:
+		delete(resp.channels, randStr)
 		elapsed := float64(time.Since(start).Seconds() * 1000)
 		log.WithFields(log.Fields{"duration_ms": elapsed}).Info("Module responded")
 		return &data, nil
