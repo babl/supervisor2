@@ -1,0 +1,5 @@
+#!/bin/bash -xe
+
+gox -osarch="linux/amd64"
+babl-build build
+rm -f supervisor2_linux_amd64

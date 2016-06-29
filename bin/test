@@ -1,0 +1,6 @@
+#!/bin/bash -xe
+
+go test ./...
+go build
+
+./supervisor2 -h >/dev/null
