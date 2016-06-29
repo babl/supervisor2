@@ -9,6 +9,7 @@ kafka:
   links:
     - zookeeper:zk
   environment:
+    KAFKA_BROKER_ID: 1
     KAFKA_ADVERTISED_HOST_NAME: 127.0.0.1
     KAFKA_MESSAGE_MAX_BYTES: 100000000
     KAFKA_REPLICA_FETCH_MAX_BYTES: 104857600
