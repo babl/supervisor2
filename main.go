@@ -29,6 +29,8 @@ type responses struct {
 	mux      sync.Mutex
 }
 
+const ModuleExecutionWaitTimeout = 5 * time.Minute
+
 var debug bool
 var hostname string
 var resp responses
@@ -131,7 +133,7 @@ func (s *server) request(ctx context.Context, in proto.Message) (*[]byte, error)
 		elapsed := float64(time.Since(start).Seconds() * 1000)
 		log.WithFields(log.Fields{"duration_ms": elapsed}).Info("Module responded")
 		return data, nil
-	case <-time.After(time.Second * 1):
+	case <-time.After(ModuleExecutionWaitTimeout):
 		log.Error("Module execution timed out")
 		return nil, errors.New("Module execution timed out")
 	}
