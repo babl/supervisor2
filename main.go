@@ -84,7 +84,8 @@ func run(listen, kafkaBrokers string, dbg bool) {
 
 func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, error) {
 	out := &pbm.BinReply{}
-	data, err := s.request(ctx, in)
+	_, async := in.Env["BABL_ASYNC"]
+	data, err := s.request(ctx, in, async)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +97,7 @@ func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, err
 
 func (s *server) Ping(ctx context.Context, in *pbm.Empty) (*pbm.Pong, error) {
 	out := &pbm.Pong{}
-	data, err := s.request(ctx, in)
+	data, err := s.request(ctx, in, false)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +107,7 @@ func (s *server) Ping(ctx context.Context, in *pbm.Empty) (*pbm.Pong, error) {
 	return out, err
 }
 
-func (s *server) request(ctx context.Context, in proto.Message) (*[]byte, error) {
+func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]byte, error) {
 	start := time.Now()
 
 	msg, err := proto.Marshal(in)
@@ -122,6 +123,12 @@ func (s *server) request(ctx context.Context, in proto.Message) (*[]byte, error)
 	topic := TopicFromMethod(MethodFromContext(ctx))
 	log.WithFields(log.Fields{"topic": topic, "key": key, "value size": len(msg)}).Debug("Send message to module")
 	kafka.SendMessage(s.kafkaProducer, key, topic, &msg)
+
+	if async {
+		elapsed := float64(time.Since(start).Seconds() * 1000)
+		log.WithFields(log.Fields{"duration_ms": elapsed}).Info("Request processed async")
+		return &[]byte{}, nil
+	}
 
 	resp.mux.Lock()
 	resp.channels[randStr] = make(chan *[]byte, 1)
