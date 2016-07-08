@@ -7,7 +7,7 @@ import (
 func configureCli() (app *cli.App) {
 	app = cli.NewApp()
 	app.Usage = "Supervisor"
-	app.Version = "2.0.1"
+	app.Version = "2.1.0"
 	app.Action = func(c *cli.Context) {
 		run(c.String("listen"), c.String("kafka-brokers"), c.GlobalBool("debug"))
 	}
