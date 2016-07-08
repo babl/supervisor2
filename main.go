@@ -72,7 +72,7 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	go func() {
 		for module := range newModulesChan {
 			log.Infof("New Module Discovered: %s", module)
-			m := shared.NewModule(module, false)
+			m := shared.NewModule(module)
 			pb.RegisterBinaryServer(m.GrpcServiceName(), server, &s)
 		}
 	}()
