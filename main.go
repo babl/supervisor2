@@ -13,9 +13,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/proto"
 	"github.com/larskluge/babl-server/kafka"
+	bablmodule "github.com/larskluge/babl/module"
 	pb "github.com/larskluge/babl/protobuf"
 	pbm "github.com/larskluge/babl/protobuf/messages"
-	"github.com/larskluge/babl/shared"
 	"golang.org/x/net/context"
 )
 
@@ -72,7 +72,7 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	go func() {
 		for module := range newModulesChan {
 			log.Infof("New Module Discovered: %s", module)
-			m := shared.NewModule(module)
+			m := bablmodule.New(module)
 			pb.RegisterBinaryServer(m.GrpcServiceName(), server, &s)
 		}
 	}()
