@@ -29,6 +29,7 @@ type responses struct {
 	mux      sync.Mutex
 }
 
+const Version = "2.1.1"
 const ModuleExecutionWaitTimeout = 5 * time.Minute
 
 var debug bool
