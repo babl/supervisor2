@@ -127,7 +127,7 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 
 	if async {
 		elapsed := float64(time.Since(start).Seconds() * 1000)
-		log.WithFields(log.Fields{"duration_ms": elapsed}).Info("Request processed async")
+		log.WithFields(log.Fields{"duration_ms": elapsed, "audit": randStr}).Info("Request processed async")
 		return &[]byte{}, nil
 	}
 
@@ -139,7 +139,7 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 	case data := <-resp.channels[randStr]:
 		delete(resp.channels, randStr)
 		elapsed := float64(time.Since(start).Seconds() * 1000)
-		log.WithFields(log.Fields{"duration_ms": elapsed}).Info("Module responded")
+		log.WithFields(log.Fields{"duration_ms": elapsed, "audit": randStr}).Info("Module responded")
 		return data, nil
 	case <-time.After(ModuleExecutionWaitTimeout):
 		log.Error("Module execution timed out")
