@@ -117,8 +117,8 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 	}
 
 	randNbr := uint32(random(1, 999999))
-	randStr := strconv.FormatUint(uint64(randNbr), 10)
-	key := hostname + "." + randStr
+	rid := strconv.FormatUint(uint64(randNbr), 10)
+	key := hostname + "." + rid
 
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
 	topic := TopicFromMethod(MethodFromContext(ctx))
@@ -127,19 +127,19 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 
 	if async {
 		elapsed := float64(time.Since(start).Seconds() * 1000)
-		log.WithFields(log.Fields{"duration_ms": elapsed, "audit": randStr}).Info("Request processed async")
+		log.WithFields(log.Fields{"duration_ms": elapsed, "rid": rid}).Info("Request processed async")
 		return &[]byte{}, nil
 	}
 
 	resp.mux.Lock()
-	resp.channels[randStr] = make(chan *[]byte, 1)
+	resp.channels[rid] = make(chan *[]byte, 1)
 	resp.mux.Unlock()
 
 	select {
-	case data := <-resp.channels[randStr]:
-		delete(resp.channels, randStr)
+	case data := <-resp.channels[rid]:
+		delete(resp.channels, rid)
 		elapsed := float64(time.Since(start).Seconds() * 1000)
-		log.WithFields(log.Fields{"duration_ms": elapsed, "audit": randStr}).Info("Module responded")
+		log.WithFields(log.Fields{"duration_ms": elapsed, "rid": rid}).Info("Module responded")
 		return data, nil
 	case <-time.After(ModuleExecutionWaitTimeout):
 		log.Error("Module execution timed out")
