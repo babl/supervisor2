@@ -18,7 +18,7 @@ func listenToModuleResponses(client *sarama.Client) {
 			channel <- &msg.Value
 			close(channel)
 		}
-		msg.Processed <- true
+		msg.Processed <- "success"
 	}
 	panic("listenToModuleResponses: Lost connection to Kafka")
 }
