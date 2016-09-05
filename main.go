@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"net"
 	"os"
@@ -13,6 +14,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/proto"
 	"github.com/larskluge/babl-server/kafka"
+	"github.com/larskluge/babl-storage/uploader"
 	"github.com/larskluge/babl/bablmodule"
 	pb "github.com/larskluge/babl/protobuf"
 	pbm "github.com/larskluge/babl/protobuf/messages"
@@ -29,8 +31,12 @@ type responses struct {
 	mux      sync.Mutex
 }
 
-const Version = "2.1.3"
-const ModuleExecutionWaitTimeout = 5 * time.Minute
+const (
+	Version                    = "2.1.3"
+	ModuleExecutionWaitTimeout = 5 * time.Minute
+	MaxKafkaMessageSize        = 1024 * 512 // 512kb
+	UploadEndpoint             = "babl.sh:4443"
+)
 
 var debug bool
 var hostname string
@@ -86,6 +92,21 @@ func run(listen, kafkaBrokers string, dbg bool) {
 func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, error) {
 	out := &pbm.BinReply{}
 	_, async := in.Env["BABL_ASYNC"]
+
+	if len(in.Stdin) > MaxKafkaMessageSize {
+		upload, err := uploader.New(UploadEndpoint, bytes.NewReader(in.Stdin))
+		check(err)
+		log.WithFields(log.Fields{"blob_id": upload.Id, "blob_url": upload.Url}).Info("Store large payload externally")
+		go func(upload *uploader.Upload) {
+			success := upload.WaitForCompletion()
+			if !success {
+				log.WithFields(log.Fields{"blob_id": upload.Id, "blob_url": upload.Url}).Error("Large payload upload failed")
+			}
+		}(upload)
+		in.Stdin = []byte{}
+		in.PayloadUrl = upload.Url
+	}
+
 	data, err := s.request(ctx, in, async)
 	if err != nil {
 		return nil, err
