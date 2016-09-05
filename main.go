@@ -34,8 +34,10 @@ type responses struct {
 const (
 	Version                    = "2.1.3"
 	ModuleExecutionWaitTimeout = 5 * time.Minute
-	MaxKafkaMessageSize        = 1024 * 512 // 512kb
 	UploadEndpoint             = "babl.sh:4443"
+
+	MaxKafkaMessageSize = 1024 * 512        // 512kb
+	MaxGrpcMessageSize  = 1024 * 1024 * 100 // 100mb
 )
 
 var debug bool

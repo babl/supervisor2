@@ -11,13 +11,15 @@ import (
 	"google.golang.org/grpc/transport"
 )
 
-func opts() []grpc.ServerOption {
+func opts() (opts []grpc.ServerOption) {
 	certPEMBlock, _ := Asset("data/server.pem")
 	keyPEMBlock, _ := Asset("data/server.key")
 	cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
 	check(err)
 	creds := credentials.NewServerTLSFromCert(&cert)
-	return []grpc.ServerOption{grpc.Creds(creds)}
+	opts = append(opts, grpc.Creds(creds))
+	opts = append(opts, grpc.MaxMsgSize(MaxGrpcMessageSize))
+	return
 }
 
 func NewServer() *grpc.Server {
