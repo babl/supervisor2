@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"errors"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -110,12 +112,22 @@ func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, err
 	}
 
 	data, err := s.request(ctx, in, async)
+
 	if err != nil {
 		return nil, err
 	}
 	if err := proto.Unmarshal(*data, out); err != nil {
 		return nil, err
 	}
+
+	if !async {
+		if out.PayloadUrl != "" {
+			var err error
+			out.Stdout, err = getPayload(out.PayloadUrl)
+			check(err)
+		}
+	}
+
 	return out, err
 }
 
@@ -168,4 +180,13 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 		log.Error("Module execution timed out")
 		return nil, errors.New("Module execution timed out")
 	}
+}
+
+func getPayload(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return ioutil.ReadAll(resp.Body)
 }
