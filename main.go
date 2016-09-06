@@ -34,7 +34,7 @@ type responses struct {
 }
 
 const (
-	Version                    = "2.2.1"
+	Version                    = "2.2.2"
 	ModuleExecutionWaitTimeout = 5 * time.Minute
 
 	MaxKafkaMessageSize = 1024 * 512        // 512kb
