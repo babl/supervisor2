@@ -36,15 +36,17 @@ type responses struct {
 const (
 	Version                    = "2.2.0"
 	ModuleExecutionWaitTimeout = 5 * time.Minute
-	UploadEndpoint             = "babl.sh:4443"
 
 	MaxKafkaMessageSize = 1024 * 512        // 512kb
 	MaxGrpcMessageSize  = 1024 * 1024 * 100 // 100mb
 )
 
-var debug bool
-var hostname string
-var resp responses
+var (
+	debug           bool
+	hostname        string
+	resp            responses
+	StorageEndpoint string // set by cli.go
+)
 
 func main() {
 	log.SetOutput(os.Stderr)
@@ -98,7 +100,7 @@ func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, err
 	_, async := in.Env["BABL_ASYNC"]
 
 	if len(in.Stdin) > MaxKafkaMessageSize {
-		upload, err := uploader.New(UploadEndpoint, bytes.NewReader(in.Stdin))
+		upload, err := uploader.New(StorageEndpoint, bytes.NewReader(in.Stdin))
 		check(err)
 		log.WithFields(log.Fields{"blob_id": upload.Id, "blob_url": upload.Url}).Info("Store large payload externally")
 		go func(upload *uploader.Upload) {

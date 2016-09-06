@@ -22,6 +22,11 @@ func configureCli() (app *cli.App) {
 			Usage: "Comma separated list of kafka brokers",
 			Value: "127.0.0.1:9092",
 		},
+		cli.StringFlag{
+			Name:  "storage",
+			Usage: "Endpoint for Babl storage",
+			Value: "babl.sh:4443",
+		},
 		cli.BoolFlag{
 			Name:   "debug",
 			Usage:  "Enable debug mode & verbose logging",
