@@ -9,6 +9,7 @@ func configureCli() (app *cli.App) {
 	app.Usage = "Supervisor"
 	app.Version = Version
 	app.Action = func(c *cli.Context) {
+		StorageEndpoint = c.String("storage")
 		run(c.String("listen"), c.String("kafka-brokers"), c.GlobalBool("debug"))
 	}
 	app.Flags = []cli.Flag{
