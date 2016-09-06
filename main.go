@@ -34,7 +34,7 @@ type responses struct {
 }
 
 const (
-	Version                    = "2.1.3"
+	Version                    = "2.2.0"
 	ModuleExecutionWaitTimeout = 5 * time.Minute
 	UploadEndpoint             = "babl.sh:4443"
 
