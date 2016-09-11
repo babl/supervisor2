@@ -9,7 +9,6 @@ func configureCli() (app *cli.App) {
 	app.Usage = "Supervisor"
 	app.Version = Version
 	app.Action = func(c *cli.Context) {
-		StorageEndpoint = c.String("storage")
 		run(c.String("listen"), c.String("kafka-brokers"), c.GlobalBool("debug"))
 	}
 	app.Flags = []cli.Flag{
@@ -22,11 +21,6 @@ func configureCli() (app *cli.App) {
 			Name:  "kafka-brokers, kb",
 			Usage: "Comma separated list of kafka brokers",
 			Value: "127.0.0.1:9092",
-		},
-		cli.StringFlag{
-			Name:  "storage",
-			Usage: "Endpoint for Babl storage",
-			Value: "babl.sh:4443",
 		},
 		cli.BoolFlag{
 			Name:   "debug",
