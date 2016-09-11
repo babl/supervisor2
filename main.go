@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"errors"
-	"io/ioutil"
 	"net"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -102,14 +99,6 @@ func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, err
 	}
 	if err := proto.Unmarshal(*data, out); err != nil {
 		return nil, err
-	}
-
-	if !async {
-		if out.PayloadUrl != "" {
-			var err error
-			out.Stdout, err = getPayload(out.PayloadUrl)
-			check(err)
-		}
 	}
 
 	return out, err
