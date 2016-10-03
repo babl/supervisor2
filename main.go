@@ -145,7 +145,10 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 
 	select {
 	case data := <-resp.channels[rid]:
+		resp.mux.Lock()
 		delete(resp.channels, rid)
+		resp.mux.Unlock()
+
 		elapsed := float64(time.Since(start).Seconds() * 1000)
 		log.WithFields(log.Fields{"duration_ms": elapsed, "rid": rid}).Info("Module responded")
 		return data, nil
