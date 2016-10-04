@@ -13,7 +13,10 @@ func listenToModuleResponses(client *sarama.Client) {
 	go kafka.Consume(client, topic, ch)
 	for msg := range ch {
 		log.WithFields(log.Fields{"key": msg.Key}).Debug("Response received from module exec")
+
+		resp.mux.Lock()
 		channel, ok := resp.channels[msg.Key]
+		resp.mux.Unlock()
 		if ok {
 			channel <- &msg.Value
 			close(channel)
