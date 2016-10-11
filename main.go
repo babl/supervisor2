@@ -153,7 +153,7 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 		log.WithFields(log.Fields{"duration_ms": elapsed, "rid": rid}).Info("Module responded")
 		return data, nil
 	case <-time.After(ModuleExecutionWaitTimeout):
-		log.Error("Module execution timed out")
+		log.WithFields(log.Fields{"topic": topic, "rid": rid}).Error("Module execution timed out")
 		return nil, errors.New("Module execution timed out")
 	}
 }
