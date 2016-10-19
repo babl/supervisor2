@@ -34,3 +34,16 @@ func TopicToModuleName(topic string) string {
 
 	return owner + "/" + name
 }
+
+func ModuleNameToTopic(module string, meta bool) string {
+	function := "IO"
+	if meta {
+		function = "meta"
+	}
+
+	parts := strings.Split(module, "/")
+	owner := parts[0]
+	name := strings.Replace(strings.Title(parts[1]), "-", "", -1)
+
+	return "babl." + owner + "." + name + "." + function
+}

@@ -22,4 +22,15 @@ var _ = Describe("Utils", func() {
 			Expect(TopicToModuleName("babl.babl.Events.Meta")).To(Equal("babl/events"))
 		})
 	})
+	Context("#ModuleNameToTopic", func() {
+		It("converts a module name to a kafka topic", func() {
+			Expect(ModuleNameToTopic("larskluge/hi", false)).To(Equal("babl.larskluge.Hi.IO"))
+		})
+		It("converts a module name to a meta kafka topic", func() {
+			Expect(ModuleNameToTopic("larskluge/hi", true)).To(Equal("babl.larskluge.Hi.meta"))
+		})
+		It("two word module", func() {
+			Expect(ModuleNameToTopic("larskluge/image-resize", false)).To(Equal("babl.larskluge.ImageResize.IO"))
+		})
+	})
 })

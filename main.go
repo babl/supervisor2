@@ -171,7 +171,9 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 			} else {
 				l.WithFields(log.Fields{"timeout": ModuleExecutionTimeout}).Warn("Module did not respond in time, cancelling request execution")
 
-				// TODO send discard request for rid
+				if err := s.BroadcastCancelRequest(module, rid); err != nil {
+					l.WithError(err).Warn("Broadcasting cancel request failed")
+				}
 
 				// start over with grace period
 				timeLeft = ModuleExecutionGrace
