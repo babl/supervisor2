@@ -17,6 +17,6 @@ func Hostname() string {
 	return h
 }
 
-func TopicFromRequestPath(method string) string {
+func RequestPathToTopic(method string) string {
 	return strings.Replace(method[1:], "/", ".", 1)
 }
