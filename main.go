@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"math/rand"
 	"net"
 	"os"
 	"strconv"
@@ -25,7 +26,7 @@ type server struct {
 }
 
 type responses struct {
-	channels map[string]chan *[]byte
+	channels map[uint64]chan *[]byte
 	mux      sync.Mutex
 }
 
@@ -39,6 +40,8 @@ var (
 	debug    bool
 	hostname string
 	resp     responses
+
+	Random = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
 func main() {
@@ -56,7 +59,7 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	}
 
 	hostname = Hostname()
-	resp = responses{channels: make(map[string]chan *[]byte)}
+	resp = responses{channels: make(map[uint64]chan *[]byte)}
 
 	lis, err := net.Listen("tcp", listen)
 	if err != nil {
@@ -124,9 +127,9 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 		return nil, err
 	}
 
-	randNbr := uint32(random(1, 999999))
-	rid := strconv.FormatUint(uint64(randNbr), 10)
-	key := hostname + "." + rid
+	rid := uint64(Random.Uint32())<<32 + uint64(Random.Uint32())
+
+	key := hostname + "." + strconv.FormatUint(rid, 10)
 
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
 	topic := TopicFromMethod(MethodFromContext(ctx))

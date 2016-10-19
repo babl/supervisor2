@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strconv"
+
 	"github.com/Shopify/sarama"
 	log "github.com/Sirupsen/logrus"
 	"github.com/larskluge/babl-server/kafka"
@@ -14,8 +16,11 @@ func listenToModuleResponses(client *sarama.Client) {
 	for msg := range ch {
 		log.WithFields(log.Fields{"key": msg.Key}).Debug("Response received from module exec")
 
+		rid, err := strconv.ParseUint(msg.Key, 10, 64)
+		check(err)
+
 		resp.mux.Lock()
-		channel, ok := resp.channels[msg.Key]
+		channel, ok := resp.channels[rid]
 		resp.mux.Unlock()
 		if ok {
 			channel <- &msg.Value
