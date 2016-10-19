@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/larskluge/babl-server/kafka"
+	bn "github.com/larskluge/babl/bablnaming"
 	pb "github.com/larskluge/babl/protobuf/messages"
 )
 
@@ -16,7 +17,7 @@ func (s *server) BroadcastCancelRequest(module string, rid uint64) error {
 		return err
 	}
 
-	topic := ModuleNameToTopic(module, true)
+	topic := bn.ModuleToTopic(module, true)
 	kafka.SendMessage(s.kafkaProducer, "", topic, &msg) // TODO return err
 	return nil
 }

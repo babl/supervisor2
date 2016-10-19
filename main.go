@@ -15,6 +15,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/larskluge/babl-server/kafka"
 	"github.com/larskluge/babl/bablmodule"
+	bn "github.com/larskluge/babl/bablnaming"
 	pb "github.com/larskluge/babl/protobuf"
 	pbm "github.com/larskluge/babl/protobuf/messages"
 	"golang.org/x/net/context"
@@ -133,8 +134,8 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 	key := hostname + "." + strconv.FormatUint(rid, 10)
 
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
-	topic := RequestPathToTopic(MethodFromContext(ctx))
-	module := TopicToModuleName(topic)
+	topic := bn.RequestPathToTopic(MethodFromContext(ctx))
+	module := bn.TopicToModule(topic)
 	l := log.WithFields(log.Fields{"module": module, "rid": rid})
 
 	l.WithFields(log.Fields{"message_size": len(msg)}).Debug("Send message to module")
