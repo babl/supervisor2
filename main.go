@@ -31,9 +31,10 @@ type responses struct {
 }
 
 const (
-	Version                    = "2.2.3"
-	ModuleExecutionWaitTimeout = 5 * time.Minute
-	MaxGrpcMessageSize         = 1024 * 1024 * 1 // 1mb
+	Version                = "2.2.3"
+	ModuleExecutionTimeout = 3 * time.Minute
+	ModuleExecutionGrace   = 1 * time.Minute
+	MaxGrpcMessageSize     = 1024 * 1024 * 1 // 1mb
 )
 
 var (
@@ -133,12 +134,15 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
 	topic := RequestPathToTopic(MethodFromContext(ctx))
-	log.WithFields(log.Fields{"topic": topic, "key": key, "value size": len(msg)}).Debug("Send message to module")
+	module := TopicToModuleName(topic)
+	l := log.WithFields(log.Fields{"module": module, "rid": rid})
+
+	l.WithFields(log.Fields{"message_size": len(msg)}).Debug("Send message to module")
 	kafka.SendMessage(s.kafkaProducer, key, topic, &msg)
 
 	if async {
 		elapsed := float64(time.Since(start).Seconds() * 1000)
-		log.WithFields(log.Fields{"duration_ms": elapsed, "rid": rid}).Info("Request processed async")
+		l.WithFields(log.Fields{"duration_ms": elapsed}).Info("Request processed async")
 		return &[]byte{}, nil
 	}
 
@@ -146,17 +150,34 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 	resp.channels[rid] = make(chan *[]byte, 1)
 	resp.mux.Unlock()
 
-	select {
-	case data := <-resp.channels[rid]:
+	defer func() {
 		resp.mux.Lock()
 		delete(resp.channels, rid)
 		resp.mux.Unlock()
+	}()
 
-		elapsed := float64(time.Since(start).Seconds() * 1000)
-		log.WithFields(log.Fields{"duration_ms": elapsed, "rid": rid, "topic": topic}).Info("Module responded")
-		return data, nil
-	case <-time.After(ModuleExecutionWaitTimeout):
-		log.WithFields(log.Fields{"topic": topic, "rid": rid}).Error("Module execution timed out")
-		return nil, errors.New("Module execution timed out")
+	timeLeft := ModuleExecutionTimeout
+	gracePeriodOver := false
+	for {
+		select {
+		case data := <-resp.channels[rid]:
+			elapsed := float64(time.Since(start).Seconds() * 1000)
+			l.WithFields(log.Fields{"duration_ms": elapsed}).Info("Module responded")
+			return data, nil
+		case <-time.After(timeLeft):
+			if gracePeriodOver {
+				l.WithFields(log.Fields{"timeout": ModuleExecutionTimeout + ModuleExecutionGrace}).Error("Module did not respond in grace period either, timeout")
+				return nil, errors.New("Module execution timed out")
+			} else {
+				l.WithFields(log.Fields{"timeout": ModuleExecutionTimeout}).Warn("Module did not respond in time, cancelling request execution")
+
+				// TODO send discard request for rid
+
+				// start over with grace period
+				timeLeft = ModuleExecutionGrace
+				gracePeriodOver = true
+				continue
+			}
+		}
 	}
 }
