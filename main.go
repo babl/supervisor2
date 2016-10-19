@@ -153,7 +153,7 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 		resp.mux.Unlock()
 
 		elapsed := float64(time.Since(start).Seconds() * 1000)
-		log.WithFields(log.Fields{"duration_ms": elapsed, "rid": rid}).Info("Module responded")
+		log.WithFields(log.Fields{"duration_ms": elapsed, "rid": rid, "topic": topic}).Info("Module responded")
 		return data, nil
 	case <-time.After(ModuleExecutionWaitTimeout):
 		log.WithFields(log.Fields{"topic": topic, "rid": rid}).Error("Module execution timed out")
