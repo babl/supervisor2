@@ -2,7 +2,7 @@ package main
 
 import (
 	"os"
-	"time"
+	"strings"
 )
 
 func check(err error) {
@@ -15,4 +15,8 @@ func Hostname() string {
 	h, err := os.Hostname()
 	check(err)
 	return h
+}
+
+func TopicFromRequestPath(method string) string {
+	return strings.Replace(method[1:], "/", ".", 1)
 }
