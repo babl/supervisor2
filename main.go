@@ -93,50 +93,28 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	server.Serve(lis)
 }
 
-func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, error) {
-	out := &pbm.BinReply{}
-	_, async := in.Env["BABL_ASYNC"]
-
-	data, err := s.request(ctx, in, async)
-
-	if err != nil {
-		return nil, err
-	}
-	if err := proto.Unmarshal(*data, out); err != nil {
-		return nil, err
-	}
-
-	return out, err
-}
-
-func (s *server) Ping(ctx context.Context, in *pbm.Empty) (*pbm.Pong, error) {
-	out := &pbm.Pong{}
-	data, err := s.request(ctx, in, false)
-	if err != nil {
-		return nil, err
-	}
-	if err := proto.Unmarshal(*data, out); err != nil {
-		return nil, err
-	}
-	return out, err
-}
-
-func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]byte, error) {
+func (s *server) IO(ctx context.Context, req *pbm.BinRequest) (*pbm.BinReply, error) {
 	start := time.Now()
-
-	msg, err := proto.Marshal(in)
-	if err != nil {
-		return nil, err
-	}
+	res := &pbm.BinReply{}
 
 	rid := uint64(Random.Uint32())<<32 + uint64(Random.Uint32())
+	req.Id = rid
+
+	_, async := req.Env["BABL_ASYNC"]
 
 	key := hostname + "." + strconv.FormatUint(rid, 10)
 
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
 	topic := bn.RequestPathToTopic(MethodFromContext(ctx))
 	module := bn.TopicToModule(topic)
+	req.Module = module
+
 	l := log.WithFields(log.Fields{"module": module, "rid": rid})
+
+	msg, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
 
 	l.WithFields(log.Fields{"message_size": len(msg)}).Debug("Send message to module")
 	kafka.SendMessage(s.kafkaProducer, key, topic, &msg)
@@ -144,7 +122,7 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 	if async {
 		elapsed := float64(time.Since(start).Seconds() * 1000)
 		l.WithFields(log.Fields{"duration_ms": elapsed}).Info("Request processed async")
-		return &[]byte{}, nil
+		return res, nil
 	}
 
 	resp.mux.Lock()
@@ -164,7 +142,10 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 		case data := <-resp.channels[rid]:
 			elapsed := float64(time.Since(start).Seconds() * 1000)
 			l.WithFields(log.Fields{"duration_ms": elapsed}).Info("Module responded")
-			return data, nil
+			if err := proto.Unmarshal(*data, res); err != nil {
+				return nil, err
+			}
+			return res, nil
 		case <-time.After(timeLeft):
 			if gracePeriodOver {
 				l.WithFields(log.Fields{"timeout": ModuleExecutionTimeout + ModuleExecutionGrace}).Error("Module did not respond in grace period either, timeout")
@@ -183,4 +164,8 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 			}
 		}
 	}
+}
+
+func (s *server) Ping(ctx context.Context, req *pbm.Empty) (*pbm.Pong, error) {
+	return &pbm.Pong{Val: "pong from supervisor"}, nil
 }
