@@ -16,7 +16,7 @@ func listenToModuleResponses(client *sarama.Client) {
 	for msg := range ch {
 		log.WithFields(log.Fields{"key": msg.Key}).Debug("Response received from module exec")
 
-		rid, err := strconv.ParseUint(msg.Key, 10, 64)
+		rid, err := u.ParseRid(msg.Key)
 		check(err)
 
 		resp.mux.Lock()

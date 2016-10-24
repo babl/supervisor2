@@ -14,6 +14,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/proto"
 	"github.com/larskluge/babl-server/kafka"
+	u "github.com/larskluge/babl-server/utils"
 	"github.com/larskluge/babl/bablmodule"
 	bn "github.com/larskluge/babl/bablnaming"
 	pb "github.com/larskluge/babl/protobuf"
@@ -102,14 +103,14 @@ func (s *server) IO(ctx context.Context, req *pbm.BinRequest) (*pbm.BinReply, er
 
 	_, async := req.Env["BABL_ASYNC"]
 
-	key := hostname + "." + strconv.FormatUint(rid, 10)
+	key := hostname + "." + u.FmtRid(rid)
 
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
 	topic := bn.RequestPathToTopic(MethodFromContext(ctx))
 	module := bn.TopicToModule(topic)
 	req.Module = module
 
-	l := log.WithFields(log.Fields{"module": module, "rid": rid})
+	l := log.WithFields(log.Fields{"module": module, "rid": u.FmtRid(rid)})
 
 	msg, err := proto.Marshal(req)
 	if err != nil {
