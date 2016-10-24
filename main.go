@@ -32,7 +32,7 @@ type responses struct {
 }
 
 const (
-	Version                = "2.2.3"
+	Version                = "2.3.0"
 	ModuleExecutionTimeout = 3 * time.Minute
 	ModuleExecutionGrace   = 1 * time.Minute
 	MaxGrpcMessageSize     = 1024 * 1024 * 1 // 1mb
