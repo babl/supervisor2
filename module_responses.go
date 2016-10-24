@@ -1,11 +1,10 @@
 package main
 
 import (
-	"strconv"
-
 	"github.com/Shopify/sarama"
 	log "github.com/Sirupsen/logrus"
 	"github.com/larskluge/babl-server/kafka"
+	u "github.com/larskluge/babl-server/utils"
 )
 
 func listenToModuleResponses(client *sarama.Client) {
