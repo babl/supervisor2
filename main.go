@@ -89,7 +89,7 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	}()
 	go listenToModuleResponses(s.kafkaClient)
 
-	log.Infof("Server started at %s", listen)
+	log.Warnf("Server started at %s", listen)
 	server.Serve(lis)
 }
 
