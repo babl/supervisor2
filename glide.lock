@@ -1,5 +1,5 @@
 hash: b57bdc8826027f251c607943d7873af5ad6a9ba6b6140f762394ad57e18430bb
-updated: 2016-10-25T15:08:01.897262778+02:00
+updated: 2016-11-01T15:27:28.802576936+01:00
 imports:
 - name: github.com/eapache/go-resiliency
   version: b86b1ec0dd4209a588dc1285cdd471e73525c0b3
@@ -23,7 +23,7 @@ imports:
   - protobuf
   - protobuf/messages
 - name: github.com/larskluge/babl-server
-  version: db4643fac69c84222c6d4e72debe9afb73cab211
+  version: 80ca42310978a9ab40cb7a07f3bd539933efc2d0
   subpackages:
   - kafka
   - utils
@@ -65,7 +65,7 @@ imports:
   - peer
   - transport
 - name: gopkg.in/bsm/sarama-cluster.v2
-  version: 0cd44ad78b92bd308d568dad5611b995fdf556d3
+  version: 117d3bb910d11344786e57f50ec3a03b15cca54d
 - name: gopkg.in/yaml.v2
   version: a5b47d31c556af34a302ce5d659e6fea44d90de0
 testImports:
