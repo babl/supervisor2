@@ -65,7 +65,7 @@ imports:
   - peer
   - transport
 - name: gopkg.in/bsm/sarama-cluster.v2
-  version: 117d3bb910d11344786e57f50ec3a03b15cca54d
+  version: 0cd44ad78b92bd308d568dad5611b995fdf556d3
 - name: gopkg.in/yaml.v2
   version: a5b47d31c556af34a302ce5d659e6fea44d90de0
 testImports:
