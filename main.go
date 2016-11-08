@@ -138,7 +138,7 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 	module := bn.TopicToModule(topic)
 	l := log.WithFields(log.Fields{"module": module, "rid": rid})
 
-	l.WithFields(log.Fields{"message_size": len(msg)}).Debug("Send message to module")
+	l.WithFields(log.Fields{"message_size": len(msg), "code": "req-enqueued"}).Info("Sent message to module")
 	kafka.SendMessage(s.kafkaProducer, key, topic, &msg)
 
 	if async {
@@ -163,14 +163,19 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 		select {
 		case data := <-resp.channels[rid]:
 			elapsed := float64(time.Since(start).Seconds() * 1000)
-			l.WithFields(log.Fields{"duration_ms": elapsed}).Info("Module responded")
+			out := &pbm.BinReply{}
+			if err := proto.Unmarshal(*data, out); err != nil {
+				return nil, err
+			}
+			l.WithFields(log.Fields{"duration_ms": elapsed, "code": "completed", "status": out.Status, "error": out.Error}).Info("Module responded")
 			return data, nil
 		case <-time.After(timeLeft):
 			if gracePeriodOver {
-				l.WithFields(log.Fields{"timeout": ModuleExecutionTimeout + ModuleExecutionGrace}).Error("Module did not respond in grace period either, timeout")
+				errorMsg := "Module did not respond in grace period,timeout"
+				l.WithFields(log.Fields{"timeout": ModuleExecutionTimeout + ModuleExecutionGrace, "rid": rid, "code": "completed", "status": "SUP_TIMEOUT", "error": errorMsg}).Error(errorMsg)
 				return nil, errors.New("Module execution timed out")
 			} else {
-				l.WithFields(log.Fields{"timeout": ModuleExecutionTimeout}).Warn("Module did not respond in time, cancelling request execution")
+				l.WithFields(log.Fields{"timeout": ModuleExecutionTimeout, "rid": rid, "code": "req-execution-canceling"}).Warn("Module did not respond in time, cancelling request execution")
 
 				if err := s.BroadcastCancelRequest(module, rid); err != nil {
 					l.WithError(err).Warn("Broadcasting cancel request failed")
