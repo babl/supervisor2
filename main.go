@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +13,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/proto"
 	"github.com/larskluge/babl-server/kafka"
+	u "github.com/larskluge/babl-server/utils"
 	"github.com/larskluge/babl/bablmodule"
 	bn "github.com/larskluge/babl/bablnaming"
 	pb "github.com/larskluge/babl/protobuf"
@@ -32,7 +32,7 @@ type responses struct {
 }
 
 const (
-	Version                = "2.2.3"
+	Version                = "2.3.1"
 	ModuleExecutionTimeout = 3 * time.Minute
 	ModuleExecutionGrace   = 1 * time.Minute
 	MaxGrpcMessageSize     = 1024 * 1024 * 1 // 1mb
@@ -89,62 +89,40 @@ func run(listen, kafkaBrokers string, dbg bool) {
 	}()
 	go listenToModuleResponses(s.kafkaClient)
 
-	log.Infof("Server started at %s", listen)
+	log.Warnf("Server started at %s", listen)
 	server.Serve(lis)
 }
 
-func (s *server) IO(ctx context.Context, in *pbm.BinRequest) (*pbm.BinReply, error) {
-	out := &pbm.BinReply{}
-	_, async := in.Env["BABL_ASYNC"]
-
-	data, err := s.request(ctx, in, async)
-
-	if err != nil {
-		return nil, err
-	}
-	if err := proto.Unmarshal(*data, out); err != nil {
-		return nil, err
-	}
-
-	return out, err
-}
-
-func (s *server) Ping(ctx context.Context, in *pbm.Empty) (*pbm.Pong, error) {
-	out := &pbm.Pong{}
-	data, err := s.request(ctx, in, false)
-	if err != nil {
-		return nil, err
-	}
-	if err := proto.Unmarshal(*data, out); err != nil {
-		return nil, err
-	}
-	return out, err
-}
-
-func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]byte, error) {
+func (s *server) IO(ctx context.Context, req *pbm.BinRequest) (*pbm.BinReply, error) {
 	start := time.Now()
-
-	msg, err := proto.Marshal(in)
-	if err != nil {
-		return nil, err
-	}
+	res := &pbm.BinReply{}
 
 	rid := uint64(Random.Uint32())<<32 + uint64(Random.Uint32())
+	req.Id = rid
 
-	key := hostname + "." + strconv.FormatUint(rid, 10)
+	_, async := req.Env["BABL_ASYNC"]
+
+	key := hostname + "." + u.FmtRid(rid)
 
 	// Sends message to the babl module topic: e.g. "babl.larskluge.ImageResize.IO"
 	topic := bn.RequestPathToTopic(MethodFromContext(ctx))
 	module := bn.TopicToModule(topic)
-	l := log.WithFields(log.Fields{"module": module, "rid": rid})
+	req.Module = module
 
-	l.WithFields(log.Fields{"message_size": len(msg), "code": "req-enqueued"}).Info("Sent message to module")
+	l := log.WithFields(log.Fields{"module": module, "rid": u.FmtRid(rid)})
+
+	msg, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	l.WithFields(log.Fields{"message_size": len(msg)}).Debug("Send message to module")
 	kafka.SendMessage(s.kafkaProducer, key, topic, &msg)
 
 	if async {
 		elapsed := float64(time.Since(start).Seconds() * 1000)
 		l.WithFields(log.Fields{"duration_ms": elapsed}).Info("Request processed async")
-		return &[]byte{}, nil
+		return res, nil
 	}
 
 	resp.mux.Lock()
@@ -163,12 +141,11 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 		select {
 		case data := <-resp.channels[rid]:
 			elapsed := float64(time.Since(start).Seconds() * 1000)
-			out := &pbm.BinReply{}
-			if err := proto.Unmarshal(*data, out); err != nil {
+			if err := proto.Unmarshal(*data, res); err != nil {
 				return nil, err
 			}
-			l.WithFields(log.Fields{"duration_ms": elapsed, "code": "completed", "status": out.Status, "error": out.Error}).Info("Module responded")
-			return data, nil
+			l.WithFields(log.Fields{"duration_ms": elapsed, "code": "completed", "status": res.Status, "error": res.Error}).Info("Module responded")
+			return res, nil
 		case <-time.After(timeLeft):
 			if gracePeriodOver {
 				errorMsg := "Module did not respond in grace period,timeout"
@@ -188,4 +165,8 @@ func (s *server) request(ctx context.Context, in proto.Message, async bool) (*[]
 			}
 		}
 	}
+}
+
+func (s *server) Ping(ctx context.Context, req *pbm.Empty) (*pbm.Pong, error) {
+	return &pbm.Pong{Val: "pong from supervisor"}, nil
 }

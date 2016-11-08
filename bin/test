@@ -1,6 +1,8 @@
 #!/bin/bash -xe
 
-go test ./...
+# exclude vendor directory when testing recursive
+go test $(go list ./... | grep -v /vendor/)
+
 go build
 
 ./supervisor2 -h >/dev/null
