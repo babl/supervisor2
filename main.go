@@ -116,7 +116,7 @@ func (s *server) IO(ctx context.Context, req *pbm.BinRequest) (*pbm.BinReply, er
 		return nil, err
 	}
 
-	l.WithFields(log.Fields{"message_size": len(msg)}).Debug("Send message to module")
+	l.WithFields(log.Fields{"message_size": len(msg), "code": "req-enqueued"}).Info("Send message to module")
 	kafka.SendMessage(s.kafkaProducer, key, topic, &msg)
 
 	if async {
@@ -149,7 +149,7 @@ func (s *server) IO(ctx context.Context, req *pbm.BinRequest) (*pbm.BinReply, er
 		case <-time.After(timeLeft):
 			if gracePeriodOver {
 				errorMsg := "Module did not respond in grace period,timeout"
-				l.WithFields(log.Fields{"timeout": ModuleExecutionTimeout + ModuleExecutionGrace, "rid": rid, "code": "completed", "status": "SUP_TIMEOUT", "error": errorMsg}).Error(errorMsg)
+				l.WithFields(log.Fields{"timeout": ModuleExecutionTimeout + ModuleExecutionGrace, "rid": rid, "code": "completed", "status": pbm.BinReply_MODULE_RESPONSE_TIMEOUT.String(), "error": errorMsg}).Error(errorMsg)
 				return nil, errors.New("Module execution timed out")
 			} else {
 				l.WithFields(log.Fields{"timeout": ModuleExecutionTimeout, "rid": rid, "code": "req-execution-canceling"}).Warn("Module did not respond in time, cancelling request execution")
