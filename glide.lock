@@ -1,5 +1,5 @@
 hash: b57bdc8826027f251c607943d7873af5ad6a9ba6b6140f762394ad57e18430bb
-updated: 2016-11-01T15:27:28.802576936+01:00
+updated: 2016-11-09T17:26:15.597560791+01:00
 imports:
 - name: github.com/eapache/go-resiliency
   version: b86b1ec0dd4209a588dc1285cdd471e73525c0b3
@@ -16,19 +16,19 @@ imports:
 - name: github.com/klauspost/crc32
   version: cb6bfca970f6908083f26f39a79009d608efd5cd
 - name: github.com/larskluge/babl
-  version: 8679880f56e95ad8e07d303c4c9a04277eb98725
+  version: 027fb2472b8cf7ce6e67bc1389d9ee5483b18c7d
   subpackages:
   - bablmodule
   - bablnaming
   - protobuf
   - protobuf/messages
 - name: github.com/larskluge/babl-server
-  version: 80ca42310978a9ab40cb7a07f3bd539933efc2d0
+  version: 5bfaa763ac785422962da103313e39e879242268
   subpackages:
   - kafka
   - utils
 - name: github.com/larskluge/babl-storage
-  version: 9f11afbeaf8e6f421e4039588214735d27b0bd0a
+  version: 2b85252497b2b24e40b52e3399af5d1327b494a6
   subpackages:
   - download
   - protobuf
@@ -65,7 +65,7 @@ imports:
   - peer
   - transport
 - name: gopkg.in/bsm/sarama-cluster.v2
-  version: 0cd44ad78b92bd308d568dad5611b995fdf556d3
+  version: 117d3bb910d11344786e57f50ec3a03b15cca54d
 - name: gopkg.in/yaml.v2
   version: a5b47d31c556af34a302ce5d659e6fea44d90de0
 testImports:
