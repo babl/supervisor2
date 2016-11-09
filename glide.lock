@@ -1,10 +1,16 @@
-hash: b57bdc8826027f251c607943d7873af5ad6a9ba6b6140f762394ad57e18430bb
-updated: 2016-11-09T17:26:15.597560791+01:00
+hash: 11084e094839c706087d1e23a549faecc06d9b9ee0c11bdfcab5a31dd6561877
+updated: 2016-11-09T21:09:30.994394704+01:00
 imports:
+- name: github.com/davecgh/go-spew
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  subpackages:
+  - spew
 - name: github.com/eapache/go-resiliency
   version: b86b1ec0dd4209a588dc1285cdd471e73525c0b3
   subpackages:
   - breaker
+- name: github.com/eapache/go-xerial-snappy
+  version: bb955e01b9346ac19dc29eb16586c90ded99a98c
 - name: github.com/eapache/queue
   version: 44cc805cf13205b55f69e14bcb69867d1ae92f98
 - name: github.com/golang/protobuf
@@ -34,7 +40,7 @@ imports:
   - protobuf
   - upload
 - name: github.com/Shopify/sarama
-  version: 4ba9bba6adb6697bcec3841e1ecdfecf5227c3b9
+  version: bd61cae2be85fa6ff40eb23dcdd24567967ac2ae
 - name: github.com/Sirupsen/logrus
   version: 3ec0642a7fb6488f65b06f9040adc67e3990296a
 - name: github.com/urfave/cli
