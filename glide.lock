@@ -16,7 +16,7 @@ imports:
 - name: github.com/klauspost/crc32
   version: cb6bfca970f6908083f26f39a79009d608efd5cd
 - name: github.com/larskluge/babl
-  version: 8679880f56e95ad8e07d303c4c9a04277eb98725
+  version: 027fb2472b8cf7ce6e67bc1389d9ee5483b18c7d
   subpackages:
   - bablmodule
   - bablnaming
