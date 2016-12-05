@@ -1,5 +1,3 @@
 #!/bin/bash -xe
 
 babl-build push
-
-ssh queue sudo systemctl restart supervisor2.service
