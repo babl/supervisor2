@@ -144,7 +144,10 @@ func (s *server) IO(ctx context.Context, req *pbm.BinRequest) (*pbm.BinReply, er
 			if err := proto.Unmarshal(*data, res); err != nil {
 				return nil, err
 			}
-			l.WithFields(log.Fields{"duration_ms": elapsed, "code": "completed", "status": res.Status.String(), "error": res.Error}).Info("Module responded")
+			if res.Error != "" {
+				l = l.WithFields(log.Fields{"error": res.Error})
+			}
+			l.WithFields(log.Fields{"duration_ms": elapsed, "code": "completed", "status": res.Status.String()}).Info("Module responded")
 			return res, nil
 		case <-time.After(timeLeft):
 			if gracePeriodOver {
