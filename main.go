@@ -131,6 +131,7 @@ func (s *server) IO(ctx context.Context, req *pbm.BinRequest) (*pbm.BinReply, er
 
 	defer func() {
 		resp.mux.Lock()
+		close(resp.channels[rid])
 		delete(resp.channels, rid)
 		resp.mux.Unlock()
 	}()

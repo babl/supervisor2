@@ -21,7 +21,6 @@ func listenToModuleResponses(client *sarama.Client) {
 		resp.mux.Unlock()
 		if ok {
 			channel <- &msg.Value
-			close(channel)
 		}
 		msg.Processed <- "success"
 	}
